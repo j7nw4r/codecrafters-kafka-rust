@@ -20,18 +20,20 @@ async fn main() -> anyhow::Result<()> {
     let Ok((stream, _)) = listener.accept().await else {
         bail!("could not accept connection");
     };
-    handle_stream(stream).await?;
+    if let Err(e) = handle_stream(stream).await {
+        println!("{}", e);
+    }
 
     Ok(())
 }
 
 async fn handle_stream(mut tcp_stream: TcpStream) -> anyhow::Result<()> {
-    println!("got here");
     let (_read_half, mut write_half) = tcp_stream.split();
 
     let mut response_bytes = BytesMut::new();
+    response_bytes.put_i32(0);
     response_bytes.put_i32(7);
-    let _ = write_half.write(response_bytes.iter().as_slice()).await
+    let _ = write_half.write(&response_bytes).await
         .context("could not write to response")?;
     write_half.flush().await.context("could not flush to response")?;
     Ok(())
